@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Car Management</title>
+    <link rel="stylesheet" href="/static/css/index.css"> 
+</head>
+<body>
+    <h1>Car Management</h1>
+    <div class="form-container">
+        <h3>Add a New Car</h3>
+        <form id="addCarForm">
+            <label>Make: <input type="text" id="make" required></label><br>
+            <label>Model: <input type="text" id="model" required></label><br>
+            <label>Year: <input type="number" id="year" required></label><br>
+            <label>Price: <input type="number" id="price" required></label><br>
+            <button type="submit">Add Car</button>
+        </form>
+    </div>
+
+    <div class="form-container">
+        <h3>Update Car</h3>
+        <form id="updateCarForm">
+            <label>Car ID: <input type="number" id="updateCarId" required></label><br>
+            <label>Make: <input type="text" id="updateMake"></label><br>
+            <label>Model: <input type="text" id="updateModel"></label><br>
+            <label>Year: <input type="number" id="updateYear"></label><br>
+            <label>Price: <input type="number" id="updatePrice"></label><br>
+            <button type="submit">Update Car</button>
+        </form>
+    </div>
+
+    <div class="form-container">
+        <h3>Get Car By ID</h3>
+        <form id="getCarForm">
+            <label>Car ID: <input type="number" id="getCarId" required></label><br>
+            <button type="submit">Get Car</button>
+        </form>
+        <p id="carDetails"></p>
+    </div>
+
+    <h3>Car List</h3>
+    <table id="carTable">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Make</th>
+                <th>Model</th>
+                <th>Year</th>
+                <th>Price</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+
+    <script>
+        const apiUrl = 'http://127.0.0.1:5000/cars';
+
+        async function fetchCars() {
+            const response = await fetch(apiUrl);
+            const cars = await response.json();
+            const carTable = document.querySelector('#carTable tbody');
+            carTable.innerHTML = '';
+            cars.forEach(car => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                            <td>${car.id}</td>
+                            <td>${car.make}</td>
+                            <td>${car.model}</td>
+                            <td>${car.year}</td>
+                            <td>${car.price}</td>
+                            <td>
+                                <button onclick="deleteCar(${car.id})">Delete</button>
+                            </td>
+                        `;
+                carTable.appendChild(row);
+            });
+        }
+
+        document.getElementById('addCarForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const make = document.getElementById('make').value;
+            const model = document.getElementById('model').value;
+            const year = parseInt(document.getElementById('year').value);
+            const price = parseInt(document.getElementById('price').value);
+
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ make, model, year, price })
+            });
+
+            if (response.ok) {
+                fetchCars();
+                e.target.reset();
+            } else {
+                alert('Failed to add car');
+            }
+        });
+
+        document.getElementById('updateCarForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const carId = parseInt(document.getElementById('updateCarId').value);
+            const make = document.getElementById('updateMake').value;
+            const model = document.getElementById('updateModel').value;
+            const year = parseInt(document.getElementById('updateYear').value);
+            const price = parseInt(document.getElementById('updatePrice').value);
+
+            const response = await fetch(`${apiUrl}/${carId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ make, model, year, price })
+            });
+
+            if (response.ok) {
+                fetchCars();
+                e.target.reset();
+            } else {
+                alert('Failed to update car');
+            }
+        });
+
+        document.getElementById('getCarForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const carId = parseInt(document.getElementById('getCarId').value);
+            const response = await fetch(`${apiUrl}/${carId}`);
+
+            const detailsElement = document.getElementById('carDetails');
+
+            if (response.ok) {
+                const car = await response.json();
+                detailsElement.textContent = `ID: ${car.id}, Make: ${car.make}, Model: ${car.model}, Year: ${car.year}, Price: ${car.price}`;
+            } else {
+                detailsElement.textContent = 'Car not found';
+            }
+        });
+
+        async function deleteCar(id) {
+            const response = await fetch(`${apiUrl}/${id}`, {
+                method: 'DELETE'
+            });
+
+            if (response.ok) {
+                fetchCars();
+            } else {
+                alert('Failed to delete car');
+            }
+        }
+
+        fetchCars();
+    </script>
+</body>
+</html>
